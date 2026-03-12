@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lottie Gallery</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap');
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --card:      #16161f;
+      --border:    #25253a;
+      --accent:    #6c63ff;
+      --accent2:   #ff6584;
+      --text:      #e2e2f0;
+      --muted:     #6b6b88;
+      --glow:      rgba(108, 99, 255, 0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.6;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: relative; z-index: 10;
+      padding: 2.5rem 3rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      background: linear-gradient(180deg, #0d0d14 0%, transparent 100%);
+    }
+
+    .brand {
+      display: flex; flex-direction: column; gap: 0.15rem;
+    }
+
+    .brand-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      line-height: 1;
+      background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stats {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    /* ── DROP ZONE ── */
+    #dropzone {
+      position: relative; z-index: 10;
+      margin: 2.5rem 3rem;
+      border: 1.5px dashed var(--border);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+      background: var(--surface);
+    }
+
+    #dropzone:hover,
+    #dropzone.drag-over {
+      border-color: var(--accent);
+      background: #13131e;
+      box-shadow: 0 0 40px var(--glow);
+    }
+
+    #dropzone input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .drop-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.8rem;
+      display: block;
+    }
+
+    .drop-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+
+    .drop-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── TOOLBAR ── */
+    #toolbar {
+      position: relative; z-index: 10;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 0 3rem 1.5rem;
+    }
+
+    #toolbar.visible { display: flex; }
+
+    .toolbar-left { display: flex; align-items: center; gap: 0.75rem; }
+
+    #search {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.9rem;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      width: 220px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #search:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+
+    #search::placeholder { color: var(--muted); }
+
+    .size-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.75rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .size-btn:hover, .size-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-clear {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.9rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-clear:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── GRID ── */
+    #gallery {
+      position: relative; z-index: 10;
+      display: grid;
+      padding: 0 3rem 4rem;
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    #gallery.size-sm { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }
+    #gallery.size-md { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    #gallery.size-lg { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform 0.22s cubic-bezier(.34,1.56,.64,1),
+                  border-color 0.22s, box-shadow 0.22s;
+      animation: fadeIn 0.35s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .card:hover {
+      transform: translateY(-4px) scale(1.015);
+      border-color: var(--accent);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--accent), 0 0 20px var(--glow);
+    }
+
+    .card-anim {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #0d0d14;
+      position: relative;
+    }
+
+    .card-anim > div {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .card-footer {
+      padding: 0.6rem 0.75rem 0.65rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .card-name {
+      font-size: 0.68rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+    }
+
+    .card-meta {
+      font-size: 0.6rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+
+    /* ── MODAL ── */
+    #modal {
+      display: none;
+      position: fixed; inset: 0;
+      z-index: 100;
+      background: rgba(5, 5, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    #modal.open { display: flex; }
+
+    .modal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px var(--accent), 0 0 60px var(--glow);
+      animation: modalIn 0.3s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 1rem;
+      width: 32px; height: 32px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    #modal-player {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #090910;
+    }
+
+    .modal-info {
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-stat { display: flex; flex-direction: column; gap: 0.15rem; }
+    .modal-stat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .modal-stat-val   { font-size: 0.82rem; color: var(--text); font-weight: 500; }
+
+    /* ── EMPTY STATE ── */
+    #empty {
+      display: none;
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 4rem 3rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    #empty.visible { display: block; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <span class="brand-label">Animation Viewer</span>
+    <h1>Lottie Gallery</h1>
+    <div class="stats" id="stats">Sin archivos cargados</div>
+  </div>
+</header>
+
+<!-- DROP ZONE -->
+<div id="dropzone">
+  <input type="file" id="fileInput" multiple accept=".json" />
+  <span class="drop-icon">🎬</span>
+  <div class="drop-title">Arrastra tus archivos Lottie aquí</div>
+  <div class="drop-sub">o haz click para seleccionar &nbsp;·&nbsp; acepta múltiples .json</div>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <div class="toolbar-left">
+    <input type="text" id="search" placeholder="buscar por nombre…" />
+    <button class="size-btn" data-size="sm">S</button>
+    <button class="size-btn active" data-size="md">M</button>
+    <button class="size-btn" data-size="lg">L</button>
+  </div>
+  <button class="btn-clear" id="clearBtn">✕ Limpiar</button>
+</div>
+
+<!-- GALLERY -->
+<div id="gallery" class="size-md"></div>
+<div id="empty">No hay animaciones que coincidan con la búsqueda.</div>
+
+<!-- MODAL -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title"></span>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div id="modal-player"></div>
+    <div class="modal-info" id="modal-info"></div>
+  </div>
+</div>
+
+<script>
+  // ── Estado global ──
+  const allAnimations = [];  // { name, size, data, animInstance }
+  let modalAnim = null;
+  let currentSearch = '';
+
+  // ── Referencias DOM ──
+  const gallery    = document.getElementById('gallery');
+  const dropzone   = document.getElementById('dropzone');
+  const fileInput  = document.getElementById('fileInput');
+  const toolbar    = document.getElementById('toolbar');
+  const statsEl    = document.getElementById('stats');
+  const searchEl   = document.getElementById('search');
+  const emptyEl    = document.getElementById('empty');
+  const modal      = document.getElementById('modal');
+  const modalTitle = document.getElementById('modal-title');
+  const modalPlayer= document.getElementById('modal-player');
+  const modalInfo  = document.getElementById('modal-info');
+
+  // ── Drag & Drop ──
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', ()  => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    loadFiles([...e.dataTransfer.files]);
+  });
+
+  fileInput.addEventListener('change', () => loadFiles([...fileInput.files]));
+
+  // ── Carga de archivos ──
+  function loadFiles(files) {
+    const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+    if (!jsonFiles.length) return;
+
+    let loaded = 0;
+    jsonFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          // Validación básica de que es Lottie
+          if (data.v === undefined && data.animations === undefined) {
+            console.warn(`${file.name} no parece ser un Lottie válido`);
+          }
+          allAnimations.push({
+            name: file.name.replace(/\.json$/i, ''),
+            size: file.size,
+            data
+          });
+        } catch(err) {
+          console.warn(`Error al parsear ${file.name}:`, err);
+        }
+        loaded++;
+        if (loaded === jsonFiles.length) renderGallery();
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // ── Render ──
+  function renderGallery() {
+    // Limpiar instancias Lottie previas antes de destruir el DOM
+    gallery.querySelectorAll('.card-anim').forEach(el => {
+      if (el._lottie) { el._lottie.destroy(); el._lottie = null; }
+    });
+    gallery.innerHTML = '';
+
+    const query = currentSearch.toLowerCase();
+    const filtered = allAnimations.filter(a => a.name.toLowerCase().includes(query));
+
+    emptyEl.classList.toggle('visible', filtered.length === 0 && allAnimations.length > 0);
+    toolbar.classList.toggle('visible', allAnimations.length > 0);
+
+    // Ocultar dropzone si ya hay algo cargado
+    dropzone.style.display = allAnimations.length ? 'none' : '';
+
+    updateStats();
+
+    filtered.forEach((anim, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.animationDelay = `${Math.min(i, 30) * 30}ms`;
+
+      const animWrap = document.createElement('div');
+      animWrap.className = 'card-anim';
+
+      const footer = document.createElement('div');
+      footer.className = 'card-footer';
+      footer.innerHTML = `
+        <div class="card-name" title="${anim.name}">${anim.name}</div>
+        <div class="card-meta">${formatSize(anim.size)} · ${anim.data.w ?? '?'}×${anim.data.h ?? '?'}</div>
+      `;
+
+      card.appendChild(animWrap);
+      card.appendChild(footer);
+      gallery.appendChild(card);
+
+      // Instanciar Lottie en el card
+      const instance = lottie.loadAnimation({
+        container: animWrap,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        animationData: anim.data
+      });
+      animWrap._lottie = instance;
+
+      // Click → modal
+      card.addEventListener('click', () => openModal(anim));
+    });
+  }
+
+  // ── Modal ──
+  function openModal(anim) {
+    if (modalAnim) { modalAnim.destroy(); modalAnim = null; }
+    modalPlayer.innerHTML = '';
+
+    modalTitle.textContent = anim.name;
+    modal.classList.add('open');
+
+    modalAnim = lottie.loadAnimation({
+      container: modalPlayer,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      animationData: anim.data
+    });
+
+    // Info
+    const fr   = anim.data.fr   ?? '—';
+    const dur  = anim.data.op && anim.data.fr ? (anim.data.op / anim.data.fr).toFixed(2) + 's' : '—';
+    const w    = anim.data.w ?? '—';
+    const h    = anim.data.h ?? '—';
+    const layers = (anim.data.layers ?? []).length;
+
+    modalInfo.innerHTML = `
+      <div class="modal-stat"><span class="modal-stat-label">Tamaño</span><span class="modal-stat-val">${formatSize(anim.size)}</span></div>
+      <div class="modal-stat"><span class="modal-stat-label">Dimensiones</span><span class="modal-stat-val">${w} × ${h}</span></div>
+      <div class="modal-stat"><span class="modal-stat-label">FPS</span><span class="modal-stat-val">${fr}</span></div>
+      <div class="modal-stat"><span class="modal-stat-label">Duración</span><span class="modal-stat-val">${dur}</span></div>
+      <div class="modal-stat"><span class="modal-stat-label">Layers</span><span class="modal-stat-val">${layers}</span></div>
+    `;
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    if (modalAnim) { modalAnim.destroy(); modalAnim = null; }
+    modalPlayer.innerHTML = '';
+  }
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // ── Búsqueda ──
+  searchEl.addEventListener('input', () => {
+    currentSearch = searchEl.value;
+    renderGallery();
+  });
+
+  // ── Tamaño de cards ──
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gallery.className = 'size-' + btn.dataset.size;
+    });
+  });
+
+  // ── Limpiar ──
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    allAnimations.length = 0;
+    currentSearch = '';
+    searchEl.value = '';
+    gallery.innerHTML = '';
+    toolbar.classList.remove('visible');
+    dropzone.style.display = '';
+    emptyEl.classList.remove('visible');
+    fileInput.value = '';
+    updateStats();
+  });
+
+  // ── Helpers ──
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function updateStats() {
+    const n = allAnimations.length;
+    statsEl.textContent = n === 0
+      ? 'Sin archivos cargados'
+      : `${n} animación${n !== 1 ? 'es' : ''} cargada${n !== 1 ? 's' : ''}`;
+  }
+</script>
+</body>
+</html>
