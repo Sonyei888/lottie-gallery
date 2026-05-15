@@ -1,2 +1,4 @@
-.idea/
+.idea/*
+!.idea/runConfigurations/
 .claude/
+node_modules/

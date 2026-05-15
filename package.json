@@ -1,0 +1,11 @@
+{
+  "name": "lottie-gallery",
+  "version": "1.0.0",
+  "description": "Browser-based gallery for previewing Lottie JSON animations.",
+  "scripts": {
+    "dev": "serve . --listen 3000"
+  },
+  "devDependencies": {
+    "serve": "^14.2.6"
+  }
+}
