@@ -2,17 +2,28 @@
 
 A lightweight, browser-based gallery for previewing [Lottie](https://airbnb.io/lottie/) JSON animations. No build step, no dependencies to install — runs entirely in the browser.
 
-Hosted at: `https://<username>.github.io/lottie-gallery/`
+Hosted at: `https://sonyei888.github.io/lottie-gallery/`
+
+---
+
+## About this project
+
+This project was built entirely through AI-assisted development as an experiment in working with artificial intelligence tools. The primary tool used was [Claude Code](https://claude.ai/code) by Anthropic, which handled the implementation, refactoring, feature additions, and design decisions from start to finish.
+
+The goal was to explore how far a project can be driven through natural language interaction with an AI coding assistant — from a single monolithic HTML file to a structured, multi-feature web application.
 
 ---
 
 ## Features
 
-- Drag-and-drop or click-to-select multiple `.json` files at once
+- Drag-and-drop or click-to-select individual `.json` files
+- Folder selection with recursive traversal — loads all Lottie files inside nested folders
 - Live search filter by animation name
 - Card size toggle: small, medium, large
 - Detail modal with full-size preview and animation metadata (dimensions, FPS, duration, layer count)
-- Add more files without clearing the current gallery
+- Export animations as PNG (first frame) or animated GIF directly from the browser
+- Sticky header with live animation counter
+- Add more files or folders without clearing the current gallery
 - All processing is done locally — no files are uploaded to any server
 
 ---

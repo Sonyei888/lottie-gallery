@@ -29,6 +29,8 @@ const modalTitle  = document.getElementById('modal-title');
 const modalPlayer = document.getElementById('modal-player');
 const modalInfo   = document.getElementById('modal-info');
 
+updateStats();
+
 /* -------------------------------------------------------------------------- */
 /* Drag & drop                                                                 */
 /* -------------------------------------------------------------------------- */
@@ -42,17 +44,36 @@ dropzone.addEventListener('dragleave', () => {
   dropzone.classList.remove('drag-over');
 });
 
-dropzone.addEventListener('drop', e => {
+dropzone.addEventListener('drop', async e => {
   e.preventDefault();
   dropzone.classList.remove('drag-over');
-  loadFiles([...e.dataTransfer.files]);
+
+  const items = e.dataTransfer.items ? [...e.dataTransfer.items] : [];
+
+  if (items.length && typeof items[0].webkitGetAsEntry === 'function') {
+    const files = await collectFilesFromItems(items);
+    loadFiles(files);
+  } else {
+    loadFiles([...e.dataTransfer.files]);
+  }
 });
 
 fileInput.addEventListener('change', () => {
   loadFiles([...fileInput.files]);
+  fileInput.value = '';
+});
+
+document.getElementById('folderInput').addEventListener('change', function () {
+  loadFiles([...this.files]);
+  this.value = '';
 });
 
 document.getElementById('addMoreInput').addEventListener('change', function () {
+  loadFiles([...this.files]);
+  this.value = '';
+});
+
+document.getElementById('addFolderInput').addEventListener('change', function () {
   loadFiles([...this.files]);
   this.value = '';
 });
@@ -275,6 +296,67 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 
 /* -------------------------------------------------------------------------- */
+/* Folder traversal (Entry API)                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Collects File objects from a DataTransferItemList, recursively traversing
+ * any directories using the FileSystem Entry API.
+ *
+ * @param {DataTransferItem[]} items
+ * @returns {Promise<File[]>}
+ */
+async function collectFilesFromItems(items) {
+  const results = await Promise.all(
+    items.map(item => {
+      const entry = item.webkitGetAsEntry();
+      return entry ? processEntry(entry) : Promise.resolve([]);
+    })
+  );
+  return results.flat();
+}
+
+/**
+ * Recursively resolves a FileSystemEntry to an array of File objects.
+ * Non-.json files are discarded at this stage.
+ *
+ * @param {FileSystemEntry} entry
+ * @returns {Promise<File[]>}
+ */
+async function processEntry(entry) {
+  if (entry.isFile) {
+    if (!entry.name.toLowerCase().endsWith('.json')) return [];
+    return [await new Promise((resolve, reject) => entry.file(resolve, reject))];
+  }
+
+  if (entry.isDirectory) {
+    const reader  = entry.createReader();
+    const entries = await readAllEntries(reader);
+    const nested  = await Promise.all(entries.map(processEntry));
+    return nested.flat();
+  }
+
+  return [];
+}
+
+/**
+ * Reads all entries from a FileSystemDirectoryReader, handling the 100-entry
+ * batch limit by calling readEntries() repeatedly until the batch is empty.
+ *
+ * @param {FileSystemDirectoryReader} reader
+ * @returns {Promise<FileSystemEntry[]>}
+ */
+async function readAllEntries(reader) {
+  const all = [];
+  let batch;
+  do {
+    batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+    all.push(...batch);
+  } while (batch.length > 0);
+  return all;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Helpers                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -290,12 +372,11 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
-/** Updates the header stats text based on the current animation count. */
+/** Updates the header counter badge. Always visible; accented when files are loaded. */
 function updateStats() {
   const n = allAnimations.length;
-  statsEl.textContent = n === 0
-    ? 'No files loaded'
-    : `${n} animation${n !== 1 ? 's' : ''} loaded`;
+  statsEl.textContent = `${n} animation${n !== 1 ? 's' : ''}`;
+  statsEl.classList.toggle('has-files', n > 0);
 }
 
 /* -------------------------------------------------------------------------- */

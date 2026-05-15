@@ -12,18 +12,28 @@
 <body>
 
   <header>
-    <div class="brand">
-      <span class="brand-label">Animation Viewer</span>
-      <h1>Lottie Gallery</h1>
-      <div class="stats" id="stats">No files loaded</div>
+    <div class="header-glow" aria-hidden="true"></div>
+    <div class="header-brand">
+      <p class="header-eyebrow">Animation Viewer</p>
+      <h1><span class="title-word">Lottie</span><span class="title-accent">Gallery</span></h1>
     </div>
+    <span id="stats" class="stats-badge">0 animations</span>
   </header>
 
   <div id="dropzone">
-    <input type="file" id="fileInput" multiple accept=".json" />
     <span class="drop-icon">🎬</span>
-    <div class="drop-title">Drop your Lottie files here</div>
-    <div class="drop-sub">or click to select &nbsp;·&nbsp; accepts multiple .json files</div>
+    <div class="drop-title">Drop files or folders here</div>
+    <div class="drop-sub">accepts .json files, folders, and nested folders</div>
+    <div class="drop-actions">
+      <label class="drop-btn">
+        <input type="file" id="fileInput" multiple accept=".json" />
+        Select files
+      </label>
+      <label class="drop-btn drop-btn--folder">
+        <input type="file" id="folderInput" webkitdirectory />
+        Select folder
+      </label>
+    </div>
   </div>
 
   <div id="toolbar">
@@ -36,7 +46,11 @@
     <div class="toolbar-right">
       <button class="btn-add">
         <input type="file" id="addMoreInput" multiple accept=".json" />
-        + Add more
+        + Files
+      </button>
+      <button class="btn-add">
+        <input type="file" id="addFolderInput" webkitdirectory />
+        + Folder
       </button>
       <button class="btn-clear" id="clearBtn">&#x2715; Clear</button>
     </div>
