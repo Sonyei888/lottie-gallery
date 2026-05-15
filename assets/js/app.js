@@ -29,6 +29,23 @@ const modalTitle  = document.getElementById('modal-title');
 const modalPlayer = document.getElementById('modal-player');
 const modalInfo   = document.getElementById('modal-info');
 
+/**
+ * Pauses card animations when they leave the viewport and resumes them when
+ * they re-enter. Prevents off-screen animations from consuming CPU/GPU,
+ * which is the primary cause of FPS drops when many cards are loaded.
+ * rootMargin of 150px starts playback just before the card scrolls into view.
+ */
+const cardObserver = new IntersectionObserver(
+  entries => {
+    entries.forEach(entry => {
+      const anim = entry.target._lottie;
+      if (!anim) return;
+      entry.isIntersecting ? anim.play() : anim.pause();
+    });
+  },
+  { rootMargin: '150px 0px', threshold: 0 }
+);
+
 updateStats();
 
 /* -------------------------------------------------------------------------- */
@@ -135,6 +152,7 @@ function loadFiles(files) {
  */
 function renderGallery() {
   gallery.querySelectorAll('.card-anim').forEach(el => {
+    cardObserver.unobserve(el);
     if (el._lottie) {
       el._lottie.destroy();
       el._lottie = null;
@@ -173,12 +191,17 @@ function renderGallery() {
 
     animWrap._lottie = lottie.loadAnimation({
       container:     animWrap,
-      renderer:      'svg',
+      renderer:      'canvas',
       loop:          true,
-      autoplay:      true,
+      autoplay:      false,
       animationData: anim.data,
+      rendererSettings: {
+        clearCanvas:     true,
+        progressiveLoad: true,
+      },
     });
 
+    cardObserver.observe(animWrap);
     card.addEventListener('click', () => openModal(anim));
   });
 }
@@ -282,6 +305,7 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 });
 
 document.getElementById('clearBtn').addEventListener('click', () => {
+  gallery.querySelectorAll('.card-anim').forEach(el => cardObserver.unobserve(el));
   allAnimations.length = 0;
   currentSearch        = '';
   searchEl.value       = '';

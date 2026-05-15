@@ -377,7 +377,8 @@ h1 {
   position: relative;
 }
 
-.card-anim > div {
+.card-anim > div,
+.card-anim > canvas {
   width: 100% !important;
   height: 100% !important;
 }
